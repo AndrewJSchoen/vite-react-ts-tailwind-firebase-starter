@@ -7,7 +7,7 @@ import { Head } from '~/components/shared/Head';
 
 function Index() {
   const { state } = useAuthState();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const completeButtonRef = useRef(null);
 
   return (
@@ -64,6 +64,7 @@ function Index() {
               .
             </p>
             <div className="mt-4 grid gap-2">
+              {state.state}
               {state.state === 'UNKNOWN' ? null : state.state === 'SIGNED_OUT' ? <SignInButton /> : <SignOutButton />}
               <button onClick={() => setIsOpen(true)}>Display Dialog</button>
             </div>

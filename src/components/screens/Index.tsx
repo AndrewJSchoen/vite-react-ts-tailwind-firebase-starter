@@ -44,13 +44,13 @@ export const updateProject = async (
   update: Partial<Omit<Project, 'id'>>,
   store: Firestore,
 ): Promise<void> => {
-  const userDoc = doc(store, 'projects', id);
-  await updateDoc(userDoc, update);
+  const projectDoc = doc(store, 'projects', id);
+  await updateDoc(projectDoc, update);
 };
 
 export const deleteProject = async (id: string, store: Firestore): Promise<void> => {
-  const userDoc = doc(store, 'projects', id);
-  await deleteDoc(userDoc);
+  const projectDoc = doc(store, 'projects', id);
+  await deleteDoc(projectDoc);
 };
 
 function Index() {

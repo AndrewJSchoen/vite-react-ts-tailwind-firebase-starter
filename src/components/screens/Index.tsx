@@ -1,14 +1,81 @@
 import { Dialog } from '@headlessui/react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useAuthState } from '~/components/contexts/UserContext';
 import { SignInButton } from '~/components/domain/auth/SignInButton';
 import { SignOutButton } from '~/components/domain/auth/SignOutButton';
 import { Head } from '~/components/shared/Head';
+import { useFirestore, AuthStateVariant } from '~/lib/firebase';
+import {
+  CollectionReference,
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  addDoc,
+  DocumentData,
+  Firestore,
+} from 'firebase/firestore';
+
+export type Project = {
+  id: string;
+  name: string;
+  size: number;
+  // description: string;
+};
+
+export async function fetchFirebaseProjects(projectsCollectionRef: CollectionReference): Promise<Project[]> {
+  const snapshot = await getDocs(projectsCollectionRef);
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() as Project;
+    return { ...data, id: doc.id };
+  });
+}
+
+export const createProject = async (
+  projectsCollectionRef: CollectionReference,
+  project: Omit<Project, 'id'>,
+): Promise<DocumentData> => {
+  return await addDoc(projectsCollectionRef, project);
+};
+
+export const updateProject = async (
+  id: string,
+  update: Partial<Omit<Project, 'id'>>,
+  store: Firestore,
+): Promise<void> => {
+  const userDoc = doc(store, 'projects', id);
+  await updateDoc(userDoc, update);
+};
+
+export const deleteProject = async (id: string, store: Firestore): Promise<void> => {
+  const userDoc = doc(store, 'projects', id);
+  await deleteDoc(userDoc);
+};
 
 function Index() {
   const { state } = useAuthState();
   const [isOpen, setIsOpen] = useState(false);
   const completeButtonRef = useRef(null);
+  const firestore = useFirestore();
+  const projectsCollectionRef = collection(firestore, 'projects');
+
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  const fetchProjects = async () => {
+    const newProjects = await fetchFirebaseProjects(projectsCollectionRef);
+    setProjects(newProjects);
+  };
+
+  useEffect(() => {
+    if (state.state === AuthStateVariant.SIGNED_IN) {
+      fetchProjects();
+    } else {
+      setProjects([]);
+    }
+  }, [state.state]);
+
+  console.log(projects, state);
 
   return (
     <>
@@ -65,8 +132,23 @@ function Index() {
             </p>
             <div className="mt-4 grid gap-2">
               {state.state}
-              {state.state === 'UNKNOWN' ? null : state.state === 'SIGNED_OUT' ? <SignInButton /> : <SignOutButton />}
+              {state.state === AuthStateVariant.UNKNOWN ? null : state.state === AuthStateVariant.SIGNED_OUT ? (
+                <SignInButton />
+              ) : (
+                <SignOutButton />
+              )}
               <button onClick={() => setIsOpen(true)}>Display Dialog</button>
+            </div>
+            <div className="mt-4 grid gap-2">
+              <button
+                onClick={() =>
+                  createProject(projectsCollectionRef, { name: 'test', size: 1 }).then(() => fetchProjects())
+                }
+              >
+                Create
+              </button>
+              {/* <button onClick={() => updateProject('1', { name: 'test2' }, firestore)}>Update</button>
+              <button onClick={() => deleteProject('1', firestore)}>Delete</button> */}
             </div>
           </div>
         </div>

@@ -1,31 +1,35 @@
 import { createContext, ReactNode, useContext, useReducer } from 'react';
 import { User } from 'firebase/auth';
+import { AuthStateVariant, AuthAction } from '~/lib/firebase';
 
-type AuthActions = { type: 'SIGN_IN'; payload: { user: User } } | { type: 'SIGN_OUT' };
+type SigninAction = { type: AuthAction.SIGN_IN; payload: { user: User } };
+type SignoutAction = { type: AuthAction.SIGN_OUT };
+
+type AuthActions = SigninAction | SignoutAction;
 
 type AuthState =
   | {
-      state: 'SIGNED_IN';
+      state: AuthStateVariant.SIGNED_IN;
       currentUser: User;
     }
   | {
-      state: 'SIGNED_OUT';
+      state: AuthStateVariant.SIGNED_OUT;
     }
   | {
-      state: 'UNKNOWN';
+      state: AuthStateVariant.UNKNOWN;
     };
 
 const AuthReducer = (_state: AuthState, action: AuthActions): AuthState => {
   switch (action.type) {
-    case 'SIGN_IN':
+    case AuthAction.SIGN_IN:
       return {
-        state: 'SIGNED_IN',
+        state: AuthStateVariant.SIGNED_IN,
         currentUser: action.payload.user,
       };
     // break
-    case 'SIGN_OUT':
+    case AuthAction.SIGN_OUT:
       return {
-        state: 'SIGNED_OUT',
+        state: AuthStateVariant.SIGNED_OUT,
       };
   }
 };
@@ -35,10 +39,13 @@ type AuthContextProps = {
   dispatch: (value: AuthActions) => void;
 };
 
-export const AuthContext = createContext<AuthContextProps>({ state: { state: 'UNKNOWN' }, dispatch: (val) => {} });
+export const AuthContext = createContext<AuthContextProps>({
+  state: { state: AuthStateVariant.UNKNOWN },
+  dispatch: (val) => {},
+});
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [state, dispatch] = useReducer(AuthReducer, { state: 'UNKNOWN' });
+  const [state, dispatch] = useReducer(AuthReducer, { state: AuthStateVariant.UNKNOWN });
 
   return <AuthContext.Provider value={{ state, dispatch }}>{children}</AuthContext.Provider>;
 };
@@ -54,7 +61,7 @@ const useSignIn = () => {
   const { dispatch } = useContext(AuthContext);
   return {
     signIn: (user: User) => {
-      dispatch({ type: 'SIGN_IN', payload: { user } });
+      dispatch({ type: AuthAction.SIGN_IN, payload: { user } });
     },
   };
 };
@@ -63,7 +70,7 @@ const useSignOut = () => {
   const { dispatch } = useContext(AuthContext);
   return {
     signOut: () => {
-      dispatch({ type: 'SIGN_OUT' });
+      dispatch({ type: AuthAction.SIGN_OUT });
     },
   };
 };

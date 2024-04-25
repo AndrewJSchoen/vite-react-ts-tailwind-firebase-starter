@@ -1,10 +1,23 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
-import { connectStorageEmulator, getStorage } from "firebase/storage";
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { connectStorageEmulator, getStorage } from 'firebase/storage';
+
+export enum AuthStateVariant {
+  SIGNED_IN = 'SIGNED_IN',
+  SIGNED_OUT = 'SIGNED_OUT',
+  UNKNOWN = 'UNKNOWN',
+}
+
+export enum AuthAction {
+  SIGN_IN = 'SIGN_IN',
+  SIGN_OUT = 'SIGN_OUT',
+}
+
+// let firebaseApp: FirebaseApp;
+const useEmulator = () => import.meta.env.VITE_USE_FIREBASE_EMULATOR;
 
 let firebaseApp: FirebaseApp;
-const useEmulator = () => import.meta.env.VITE_USE_FIREBASE_EMULATOR;
 
 export const setupFirebase = () => {
   try {
@@ -17,8 +30,9 @@ export const setupFirebase = () => {
       messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGINGSENDERID,
       appId: import.meta.env.VITE_FIREBASE_APPID,
     });
+    console.log('Firebase app initialized', firebaseApp);
   } catch (error) {
-    console.error({error})
+    console.error({ error });
   }
 };
 
@@ -36,7 +50,7 @@ export const useAuth = () => {
 
 export const useFirestore = () => {
   if (!firestore) {
-    firestore = getFirestore();
+    firestore = getFirestore(firebaseApp);
     if (useEmulator()) {
       connectFirestoreEmulator(firestore, 'localhost', 8080);
     }

@@ -12,7 +12,7 @@ export const SignInButton = () => {
   };
 
   return (
-    <button onClick={handleClick} type="button" className="btn btn-primary normal-case min-w-60">
+    <button onClick={handleClick} type="button" className="btn btn-primary normal-case w-full">
       Sign In With Google
     </button>
   );

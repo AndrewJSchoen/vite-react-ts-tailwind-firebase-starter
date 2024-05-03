@@ -1,13 +1,18 @@
-import {HelmetProvider} from "react-helmet-async";
-import {AuthProvider} from "~/components/contexts/UserContext";
-import Main from "~/components/root/Main";
+import { Router } from '~/components/router/Router';
+import { StoreProvider, queryClient } from '../contexts/store';
+import { HelmetProvider } from 'react-helmet-async';
+import { QueryClientProvider } from '@tanstack/react-query';
 
-export const App = () => {
+export function App() {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <Main />
-      </AuthProvider>
+      <StoreProvider>
+        <QueryClientProvider client={queryClient}>
+          <main>
+            <Router />
+          </main>
+        </QueryClientProvider>
+      </StoreProvider>
     </HelmetProvider>
-  )
-};
+  );
+}

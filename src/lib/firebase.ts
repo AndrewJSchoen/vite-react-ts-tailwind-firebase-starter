@@ -14,12 +14,26 @@ export enum AuthAction {
   SIGN_OUT = 'SIGN_OUT',
 }
 
+export enum Role {
+  OWNER = 'owner',
+  EDITOR = 'editor',
+  VIEWER = 'viewer',
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  roles: { [key: string]: Role };
+}
+
 // let firebaseApp: FirebaseApp;
 const useEmulator = () => import.meta.env.VITE_USE_FIREBASE_EMULATOR;
 
 let firebaseApp: FirebaseApp;
 
-export const setupFirebase = () => {
+export const setupFirebase = (): FirebaseApp | null => {
   try {
     firebaseApp = initializeApp({
       apiKey: import.meta.env.VITE_FIREBASE_APIKEY,
@@ -31,8 +45,10 @@ export const setupFirebase = () => {
       appId: import.meta.env.VITE_FIREBASE_APPID,
     });
     console.log('Firebase app initialized', firebaseApp);
+    return firebaseApp;
   } catch (error) {
     console.error({ error });
+    return null;
   }
 };
 

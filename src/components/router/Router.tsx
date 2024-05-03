@@ -1,22 +1,25 @@
-import { Dialog } from '@headlessui/react';
-import { lazy, Suspense, useState } from 'react';
-import { Outlet, RouteObject, useRoutes, BrowserRouter } from 'react-router-dom';
+// import { Dialog } from '@headlessui/react';
+import { QueryClient } from '@tanstack/query-core';
+import { lazy, Suspense } from 'react';
+import { store } from 'components/contexts/store';
+import { RouteObject, useRoutes, BrowserRouter, LoaderFunctionArgs, redirect } from 'react-router-dom';
 
 const Loading = () => <p className="p-4 w-full h-full text-center">Loading...</p>;
 
-const IndexScreen = lazy(() => import('~/components/screens/Index'));
+// const IndexScreen = lazy(() => import('~/components/screens/Index'));
+const ProjectsScreen = lazy(() => import('~/components/screens/Projects'));
+const ProjectScreen = lazy(() => import('~/components/screens/Project'));
 const Page404Screen = lazy(() => import('~/components/screens/404'));
+const Layout = lazy(() => import('~/components/shared/Layout'));
 
-function Layout() {
-  return (
-    <div>
-      <nav className="p-4 flex items-center justify-between">
-        <span>Header</span>
-      </nav>
-      <Outlet />
-    </div>
-  );
-}
+const authLoader = async (loaderFnArgs: LoaderFunctionArgs) => {
+  const currentUser = store.getState().authState.currentUser;
+  if (!currentUser) {
+    return redirect('/');
+  } else {
+    return loaderFnArgs.request;
+  }
+};
 
 export const Router = () => {
   return (
@@ -34,8 +37,17 @@ const InnerRouter = () => {
       children: [
         {
           index: true,
-          element: <IndexScreen />,
+          element: <ProjectsScreen />,
+          // loader: (obj) => {
+          //   return true;
+          // },
         },
+        {
+          path: 'projects/:projectId',
+          element: <ProjectScreen />,
+          loader: authLoader,
+        },
+        // TODO: Add projects routes
         {
           path: '*',
           element: <Page404Screen />,

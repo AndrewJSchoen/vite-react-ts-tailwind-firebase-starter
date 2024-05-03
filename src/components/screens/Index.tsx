@@ -79,8 +79,8 @@ function Index() {
 
   return (
     <>
-      <Head title="TOP PAGE" />
-      <div className="hero min-h-screen">
+      <Head title="Home" />
+      <div className="flex h-full bg-white rounded-md">
         <div className="text-center hero-content">
           <div>
             <h1 className="text-3xl font-bold">

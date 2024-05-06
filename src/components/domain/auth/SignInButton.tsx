@@ -1,18 +1,18 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useAuth } from '~/lib/firebase';
+import { useStore } from '~/components/contexts/store';
 
 export const SignInButton = () => {
-  const handleClick = () => {
-    const provider = new GoogleAuthProvider();
-    const auth = useAuth();
-    // @see https://firebase.google.com/docs/auth/web/google-signin
-    auth.useDeviceLanguage();
+  const signIn = useStore((state) => state.signIn);
+  // const handleClick = () => {
+  //   const provider = new GoogleAuthProvider();
+  //   // @see https://firebase.google.com/docs/auth/web/google-signin
+  //   auth.useDeviceLanguage();
 
-    signInWithPopup(auth, provider);
-  };
+  //   signInWithPopup(auth, provider);
+  // };
 
   return (
-    <button onClick={handleClick} type="button" className="btn btn-primary normal-case w-full">
+    <button onClick={signIn} type="button" className="btn btn-primary normal-case w-full">
       Sign In With Google
     </button>
   );

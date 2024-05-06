@@ -1,65 +1,41 @@
-import { ReactNode, createContext, useContext, useEffect, useMemo } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { create, useStore as useZustandStore } from 'zustand';
 import { AuthStateVariant, setupFirebase, type Project, Role } from '~/lib/firebase';
-import { Auth, User, getAuth, onAuthStateChanged } from 'firebase/auth';
 import {
-  CollectionReference,
+  Auth,
+  User,
+  getAuth,
+  onAuthStateChanged,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+  UserCredential,
+} from 'firebase/auth';
+import {
   DocumentReference,
   collection,
-  collectionGroup,
   doc,
-  getDoc,
-  getDocs,
   addDoc,
   getFirestore,
-  setDoc,
   query,
   where,
+  onSnapshot,
+  Firestore,
+  DocumentData,
 } from 'firebase/firestore';
-import { useQuery, QueryClient, useMutation } from '@tanstack/react-query';
+// import { useQuery, QueryClient, useMutation } from '@tanstack/react-query';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { FirebaseApp } from 'firebase/app';
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchIntervalInBackground: true,
-      refetchInterval: 5000,
-    },
-  },
-});
-
-export const firebase = setupFirebase();
-if (!firebase) {
-  throw new Error('Firebase not initialized');
-}
-const auth = getAuth(firebase);
-export const firestore = getFirestore(firebase);
-// console.log('Creating Store');
-
-export const projectsCollection = collection(firestore, 'projects');
-
-export async function getProjectIds(): Promise<string[]> {
-  console.log('getting project ids');
-  const projectsSnapshot = await getDocs(
-    query(projectsCollection, where(`roles.${auth.currentUser?.uid}`, '==', Role.OWNER)),
-  );
-  console.log('snapshot', projectsSnapshot);
-  return projectsSnapshot.docs.map((doc) => doc.id);
-}
-
-export async function addProject(userId: string, project?: Partial<Project>): Promise<DocumentReference> {
-  const result = await addDoc(collection(firestore, 'projects'), {
-    name: 'New Project',
-    description: 'A new project',
-    image: 'https://via.placeholder.com/250x150',
-    roles: {
-      [userId]: Role.OWNER,
-    },
-    ...project,
-  });
-
-  return result;
-}
+// For now removing react-query.
+// export const queryClient = new QueryClient({
+//   defaultOptions: {
+//     queries: {
+//       refetchIntervalInBackground: true,
+//       refetchInterval: 5000,
+//     },
+//   },
+// });
 
 type AuthState =
   | {
@@ -76,13 +52,17 @@ type AuthState =
     };
 
 export interface StoreData {
+  firebase: FirebaseApp;
+  auth: Auth;
+  firestore: Firestore;
   authState: AuthState;
   currentProject: Project | null;
 }
 
 export interface StoreActions {
-  signIn: (user: User) => void;
+  signIn: () => void;
   signOut: () => void;
+  updateAuth: (user?: User) => void;
   setProject: (project: Project) => void;
 }
 
@@ -92,20 +72,70 @@ export interface StoreProviderProps {
   children: ReactNode;
 }
 
+// These can either be initialized here or in the store. Here it is located external to the store, even if they are referenced in the store.
+const firebase = setupFirebase();
+if (!firebase) {
+  throw new Error('Firebase not initialized');
+}
+const auth = getAuth(firebase);
+const firestore = getFirestore(firebase);
+
 export const createStore = () => {
-  return create<Store>()(
-    subscribeWithSelector((set) => ({
-      authState: { state: AuthStateVariant.UNKNOWN, currentUser: null },
+  // Commented out. Should be either this or the section above.
+  // const firebase = setupFirebase();
+  // if (!firebase) {
+  //   throw new Error('Firebase not initialized');
+  // }
+  // const auth = getAuth(firebase);
+  // const firestore = getFirestore(firebase);
+
+  const user = auth.currentUser;
+  const authState: AuthState = user
+    ? { state: AuthStateVariant.SIGNED_IN, currentUser: user }
+    : { state: AuthStateVariant.SIGNED_OUT, currentUser: null };
+
+  const s = create<Store>()(
+    subscribeWithSelector((set, get) => ({
+      firebase,
+      auth,
+      firestore,
+      authState,
       currentProject: null,
-      signIn: async (user) => {
-        set({
-          authState: { state: AuthStateVariant.SIGNED_IN, currentUser: user },
+      signIn: async () => {
+        const provider = new GoogleAuthProvider();
+        // @see https://firebase.google.com/docs/auth/web/google-signin
+        auth.useDeviceLanguage();
+
+        signInWithPopup(auth, provider).then(
+          (userCred: UserCredential) => {
+            get().updateAuth(userCred.user);
+          },
+          (error) => {
+            console.error(error);
+          },
+        );
+      },
+      updateAuth: (user) => {
+        const authState: AuthState = user
+          ? { state: AuthStateVariant.SIGNED_IN, currentUser: user }
+          : { state: AuthStateVariant.SIGNED_OUT, currentUser: null };
+        set({ authState });
+      },
+      signOut: async () => {
+        signOut(get().auth).then(() => {
+          get().updateAuth();
         });
       },
-      signOut: () => set({ authState: { state: AuthStateVariant.SIGNED_OUT, currentUser: null } }),
       setProject: (project) => set({ currentProject: project }),
     })),
   );
+
+  onAuthStateChanged(auth, (user) => {
+    console.log('USER', user);
+    s.getState().updateAuth(user || undefined);
+  });
+
+  return s;
 };
 
 export const store = createStore();
@@ -113,18 +143,6 @@ export type StoreType = typeof store;
 export const StoreContext = createContext<StoreType | null>(null);
 
 export function StoreProvider({ children }: StoreProviderProps): ReactNode {
-  useEffect(() => {
-    if (auth) {
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          store.getState().signIn(user);
-        } else {
-          store.getState().signOut();
-        }
-      });
-    }
-  }, [auth]);
-
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
@@ -136,49 +154,66 @@ export function useStore<T>(selector: Selector<T>): T {
   return useZustandStore(store, selector);
 }
 
-// const function useProject(id): DefinedUseQueryResult<Project,Error> {
+export function useProjectIds(): string[] {
+  const [projectIds, setProjectIds] = useState<string[]>([]);
+  // Testing out including/excluding these variables in the store.
+  // const firestore = useStore((state) => state.firestore);
 
-// }
-
-export const useLoadedProject = (id: string) => {
-  const docRef = doc(firestore, 'projects', id);
-  return useQuery({
-    queryKey: ['projects', id],
-    queryFn: async ({ queryKey: [, id] }) => {
-      const response = await getDoc(docRef);
-      return { id, image: '', name: '', description: '', ...response.data() } as Project;
-    },
-  });
-};
-
-export const useStoredProject = (id: string) => {
-  const setProject = useStore((state) => state.setProject);
-  const { mutate } = useMutation({
-    mutationFn: async (project: Project) => {
-      return await setDoc(doc(firestore, 'projects', id), project);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', id] });
-    },
-  });
+  const projectsCollection = collection(firestore, 'projects');
+  const authState = useStore((state) => state.authState);
 
   useEffect(() => {
-    const unsubscribe = store.subscribe(
-      (state) => state.currentProject,
-      (project) => {
-        if (project) {
-          mutate(project);
-        }
+    const listener = onSnapshot(
+      query(projectsCollection, where(`roles.${authState.currentUser?.uid}`, '==', Role.OWNER)),
+      (snapshot) => {
+        setProjectIds(snapshot.docs.map((doc) => doc.id));
       },
     );
+    return listener;
+  }, [authState.currentUser?.uid]);
 
-    return unsubscribe;
-  }, [id]);
-  //   queryKey: ['projects', id],
-  //   queryFn: async ({ queryKey: [, id] }) => {
-  //     const response = await getDoc(doc(firestore, 'projects', id));
+  return projectIds;
+}
 
-  //     return { id, image: '', name: '', description: '', ...response.data() } as Project;
-  //   },
-  // });
-};
+export function useProject(id: string): Project | null {
+  const [project, setProject] = useState<Project | null>(null);
+  // Testing out including/excluding these variables in the store.
+  // const firestore = useStore((state) => state.firestore);
+  const authState = useStore((state) => state.authState);
+  const docRef = doc(firestore, 'projects', id);
+
+  useEffect(() => {
+    if (authState.currentUser?.uid) {
+      const listener = onSnapshot(docRef, (snapshot) => {
+        setProject({ id, image: '', name: '', description: '', ...snapshot.data() } as Project);
+      });
+      return listener;
+    }
+  }, [id, authState.currentUser?.uid]);
+
+  return project;
+}
+
+export function useAddProject(): (project: Partial<Project>) => Promise<DocumentReference<DocumentData, DocumentData>> {
+  // Testing out including/excluding these variables in the store.
+  // const firestore = useStore((state) => state.firestore);
+  const currentUser = useStore((state) => state.authState.currentUser);
+
+  const addProjectFn = async (project?: Partial<Project>) => {
+    if (!currentUser) {
+      throw new Error('User not signed in');
+    }
+    const result = await addDoc(collection(firestore, 'projects'), {
+      name: 'New Project',
+      description: 'A new project',
+      image: 'https://via.placeholder.com/250x150',
+      roles: {
+        [currentUser?.uid]: Role.OWNER,
+      },
+      ...project,
+    });
+
+    return result;
+  };
+  return addProjectFn;
+}

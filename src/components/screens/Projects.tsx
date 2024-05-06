@@ -1,16 +1,17 @@
 import { Head } from '../shared/Head';
 import ProjectCard from '../shared/ProjectCard';
-import { getProjectIds } from '../contexts/store';
-import { useQuery } from '@tanstack/react-query';
+import { useProjectIds } from '../contexts/store';
 import { NewProject } from '../shared/NewProject';
 
 export default function Projects() {
-  const { data } = useQuery({
-    queryKey: ['projects'],
-    queryFn: getProjectIds,
-  });
+  const projectIds = useProjectIds();
 
-  console.log('Projects', data);
+  // const { data } = useQuery({
+  //   queryKey: ['projects'],
+  //   queryFn: getProjectIds,
+  // });
+
+  // console.log('Projects', data);
 
   // const projectIds = useStore((state) => state.projects);
 
@@ -25,7 +26,9 @@ export default function Projects() {
           </div>
 
           <div className="grid grid-cols-3 gap-1 justify-start w-full pb-1">
-            {data?.map((id) => <ProjectCard key={id} id={id} />)}
+            {projectIds.map((id) => (
+              <ProjectCard key={id} id={id} />
+            ))}
           </div>
         </div>
       </div>

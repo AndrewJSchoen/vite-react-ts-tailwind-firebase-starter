@@ -1,12 +1,12 @@
-import { useAuth } from '~/lib/firebase';
 import { useNavigate } from 'react-router-dom';
+import { useStore } from '~/components/contexts/store';
 
 export const SignOutButton = () => {
   const navigate = useNavigate();
+  const signOut = useStore((state) => state.signOut);
 
   const handleClick = () => {
-    const auth = useAuth();
-    auth.signOut();
+    signOut();
     navigate('/');
   };
 

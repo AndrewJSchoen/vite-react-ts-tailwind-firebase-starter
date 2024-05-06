@@ -1,29 +1,28 @@
 import { redirect, useParams, useNavigate } from 'react-router-dom';
 import { Head } from '~/components/shared/Head';
-import { useLoadedProject } from '../contexts/store';
+import { useProject } from '../contexts/store';
 
 export default function Project() {
   const params = useParams();
+  const navigate = useNavigate();
 
   if (!params.projectId) {
     redirect('/404');
   }
 
-  const { data: project, isError, isLoading } = useLoadedProject(params.projectId || '');
+  const project = useProject(params.projectId || '');
 
-  if (isError) {
+  if (!project) {
     redirect('/404');
     return null;
   }
 
-  const navigate = useNavigate();
-
   return (
     <>
-      <Head title={isLoading ? 'Loading...' : project?.name || ''} />
+      <Head title={project?.name || ''} />
       <div
         className="hero h-full w-full flex rounded-md p-1 justify-center"
-        style={{ backgroundImage: `url(${isLoading ? 'Loading...' : project?.image})` }}
+        style={{ backgroundImage: `url(${project?.image})` }}
       >
         <div className="hero-content">
           <div>

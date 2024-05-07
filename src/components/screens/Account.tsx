@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SignOutButton } from '../domain/auth/SignOutButton';
+import { Modal } from '~/components/shared/Modal';
+import { ModalLayouter } from '../shared/ModalLayouter';
 
 const AccountModal = () => {
   const navigate = useNavigate();
@@ -13,12 +15,16 @@ const AccountModal = () => {
   }, [dialogRef]);
 
   return (
-    <dialog ref={dialogRef} className="modal" onClick={() => navigate('/')}>
-      <div className="modal-box">
-        <h3>Account</h3>
-        <SignOutButton />
-      </div>
-    </dialog>
+    <Modal open onClickBackdrop={() => navigate('/')} title="Account">
+      <ModalLayouter
+        left={<div>Left</div>}
+        right={
+          <div className="p-2">
+            <SignOutButton />
+          </div>
+        }
+      />
+    </Modal>
   );
 };
 

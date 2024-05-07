@@ -1,24 +1,16 @@
 import { SignInButton } from '../domain/auth/SignInButton';
-import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Modal } from '~/components/shared/Modal';
 
 const SignInModal = () => {
   const navigate = useNavigate();
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    if (dialogRef) {
-      dialogRef.current?.showModal();
-    }
-  }, [dialogRef]);
 
   return (
-    <dialog ref={dialogRef} className="modal" onClick={() => navigate('/')}>
-      <div className="modal-box">
-        <h3>SignIn</h3>
+    <Modal open onClickBackdrop={() => navigate('/')} title="SignIn">
+      <div className="p-2">
         <SignInButton />
       </div>
-    </dialog>
+    </Modal>
   );
 };
 

@@ -16,6 +16,7 @@ import {
   collection,
   doc,
   addDoc,
+  deleteDoc,
   getFirestore,
   query,
   where,
@@ -57,13 +58,15 @@ export interface StoreData {
   firestore: Firestore;
   authState: AuthState;
   currentProject: Project | null;
+  theme: 'light' | 'dark' | 'system';
 }
 
 export interface StoreActions {
-  signIn: () => void;
-  signOut: () => void;
+  signIn: (cb?: () => void) => void;
+  signOut: (cb?: () => void) => void;
   updateAuth: (user?: User) => void;
   setProject: (project: Project) => void;
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 }
 
 export type Store = StoreActions & StoreData;
@@ -101,7 +104,7 @@ export const createStore = () => {
       firestore,
       authState,
       currentProject: null,
-      signIn: async () => {
+      signIn: (cb?: () => void) => {
         const provider = new GoogleAuthProvider();
         // @see https://firebase.google.com/docs/auth/web/google-signin
         auth.useDeviceLanguage();
@@ -109,6 +112,9 @@ export const createStore = () => {
         signInWithPopup(auth, provider).then(
           (userCred: UserCredential) => {
             get().updateAuth(userCred.user);
+            if (cb) {
+              cb();
+            }
           },
           (error) => {
             console.error(error);
@@ -121,12 +127,19 @@ export const createStore = () => {
           : { state: AuthStateVariant.SIGNED_OUT, currentUser: null };
         set({ authState });
       },
-      signOut: async () => {
+      signOut: (cb?: () => void) => {
         signOut(get().auth).then(() => {
           get().updateAuth();
+          if (cb) {
+            cb();
+          }
         });
       },
       setProject: (project) => set({ currentProject: project }),
+      theme: 'system',
+      setTheme: (theme) => {
+        set({ theme });
+      },
     })),
   );
 
@@ -216,4 +229,36 @@ export function useAddProject(): (project: Partial<Project>) => Promise<Document
     return result;
   };
   return addProjectFn;
+}
+
+export const useDeleteProject = (id: string, callback: () => void) => {
+  // Testing out including/excluding these variables in the store.
+  // const firestore = useStore((state) => state.firestore);
+  const currentUser = useStore((state) => state.authState.currentUser);
+
+  const deleteProject = async () => {
+    if (!currentUser) {
+      throw new Error('User not signed in');
+    }
+    await deleteDoc(doc(firestore, 'projects', id)).then(callback);
+  };
+
+  return deleteProject;
+};
+
+export function useSystemThemePreference(): 'dark' | 'light' {
+  const darkModePreference = window.matchMedia('(prefers-color-scheme: dark)');
+  const [theme, setTheme] = useState<'dark' | 'light'>(darkModePreference.matches ? 'dark' : 'light');
+
+  useEffect(() => {
+    const listener = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+    };
+    darkModePreference.addEventListener('change', listener);
+    return () => {
+      darkModePreference.removeEventListener('change', listener);
+    };
+  }, []);
+
+  return theme;
 }

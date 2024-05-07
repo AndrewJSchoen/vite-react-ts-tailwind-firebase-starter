@@ -39,19 +39,11 @@ const InnerRouter = () => {
         {
           index: true,
           element: <ProjectsScreen />,
-          // loader: (obj) => {
-          //   return true;
-          // },
         },
         {
           path: 'projects/:projectId',
           element: <ProjectScreen />,
           loader: authLoader,
-        },
-        // TODO: Add projects routes
-        {
-          path: '*',
-          element: <Page404Screen />,
         },
         {
           path: '/signin',
@@ -60,6 +52,12 @@ const InnerRouter = () => {
         {
           path: '/account',
           element: <AccountScreen />,
+          loader: authLoader,
+        },
+        // TODO: Add projects routes
+        {
+          path: '*',
+          element: <Page404Screen />,
         },
       ],
     },

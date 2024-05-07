@@ -6,7 +6,7 @@ export default function ProjectCard({ id }: { id: string }) {
   const project = useProject(id);
 
   return (
-    <div className="card bg-gray-500 rounded-md">
+    <div className="card bg-gray-500 rounded-none">
       <figure>
         <img src={project?.image} alt={project?.name} />
       </figure>

@@ -21,7 +21,7 @@ export default function SignInOut() {
     // </button>
     <Link
       to={authState.state === AuthStateVariant.SIGNED_IN ? '/account' : '/signin'}
-      className="btn normal-case w-full"
+      className="btn normal-case w-full rounded-none"
       // This is from the tutorial here: https://dev.to/devmdmamun/create-contextual-modal-navigation-with-react-router-v6-28k2
       // But it doesn seem to work yet.
       state={{ background: location }}

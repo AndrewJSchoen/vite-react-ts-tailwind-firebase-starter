@@ -2,30 +2,21 @@ import { Head } from '../shared/Head';
 import ProjectCard from '../shared/ProjectCard';
 import { useProjectIds } from '../contexts/store';
 import { NewProject } from '../shared/NewProject';
+import { Breadcrumb } from '../shared/Breadcrumb';
 
 export default function Projects() {
   const projectIds = useProjectIds();
 
-  // const { data } = useQuery({
-  //   queryKey: ['projects'],
-  //   queryFn: getProjectIds,
-  // });
-
-  // console.log('Projects', data);
-
-  // const projectIds = useStore((state) => state.projects);
-
   return (
     <>
       <Head title="Home" />
-      <div className="flex h-full bg-white rounded-md scroll-auto overflow-y-scroll p-1 justify-start">
+      <div className="flex h-full dark:bg-black bg-white rounded-none scroll-auto overflow-y-scroll p-2 justify-start">
         <div className="w-full">
-          <div className="p-1 mb-1 bg-gray-200 rounded-md flex align-middle">
-            <h1 className="text-4xl text-gray-900 text-left flex-1 p-1">Projects</h1>
+          <Breadcrumb items={[{ href: '/', label: 'Home' }]}>
             <NewProject />
-          </div>
+          </Breadcrumb>
 
-          <div className="grid grid-cols-3 gap-1 justify-start w-full pb-1">
+          <div className="grid grid-cols-3 gap-3 justify-start w-full pb-2">
             {projectIds.map((id) => (
               <ProjectCard key={id} id={id} />
             ))}

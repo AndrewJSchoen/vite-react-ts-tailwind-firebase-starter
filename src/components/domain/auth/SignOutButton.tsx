@@ -6,12 +6,13 @@ export const SignOutButton = () => {
   const signOut = useStore((state) => state.signOut);
 
   const handleClick = () => {
-    signOut();
-    navigate('/');
+    signOut(() => {
+      navigate('/');
+    });
   };
 
   return (
-    <button onClick={handleClick} type="button" className="btn normal-case w-full">
+    <button onClick={handleClick} type="button" className="btn normal-case w-full rounded-none">
       Sign Out
     </button>
   );
